@@ -253,7 +253,7 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;height:3px;backgroun
         <div class="amount-row">
           <div>
             <div class="amt-label">Amount to Pay</div>
-            <div class="amt-value"><sup>₦</sup>2,000</div>
+            <div class="amt-value"><sup>₦</sup>4,000</div>
           </div>
           <div class="amt-right">One-time payment<br>Per activation key</div>
         </div>
@@ -329,6 +329,15 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;height:3px;backgroun
         <input type="text" class="field-input" id="txInput"
           placeholder="e.g. 6031tenta001"
           autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+
+        <label class="field-label" for="refInput" style="margin-top:6px;">Referral Code <span style="font-size:9px;color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></label>
+        <input type="text" class="field-input" id="refInput"
+          placeholder="5-letter code, if you have one"
+          maxlength="5"
+          autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"
+          oninput="this.value=this.value.toUpperCase()"
+          style="font-family:var(--mono);letter-spacing:2px;margin-bottom:10px;"/>
+
         <button class="primary-btn" id="mainBtn">
           <span class="spin" id="spinner"></span>
           <span id="btnLabel">Get Activation Key</span>
@@ -461,10 +470,26 @@ function startCountdown() {
 
 /* ── Verify ── */
 document.getElementById('txInput').addEventListener('keydown', e => { if (e.key === 'Enter') getKey(); });
+document.getElementById('refInput').addEventListener('keydown', e => { if (e.key === 'Enter') getKey(); });
+
+/* ── Pre-fill referral from URL ?ref= ── */
+(function() {
+  const ref = new URLSearchParams(window.location.search).get('ref');
+  if (ref) {
+    const el = document.getElementById('refInput');
+    el.value = ref.toUpperCase().substring(0, 5);
+    el.readOnly = true;
+    el.style.background = '#f0fdf8';
+    el.style.borderColor = 'var(--green-border)';
+    el.style.color = 'var(--green)';
+  }
+})();
 document.getElementById('mainBtn').addEventListener('click', getKey);
 
 async function getKey() {
-  const txId = document.getElementById('txInput').value.trim();
+  const txId  = document.getElementById('txInput').value.trim();
+  const refId = document.getElementById('refInput').value.trim().toUpperCase();
+
   if (!txId || txId.length < 5) {
     showResult('error', '❌', 'Invalid Session ID', 'Please paste the full Session ID from your PalmPay notification.');
     return;
@@ -472,7 +497,9 @@ async function getKey() {
   setLoading(true);
   hideResult();
   try {
-    const resp = await fetch(`${GAS_URL}?action=scrapeAndClaim&sessionId=${encodeURIComponent(txId)}`);
+    const action = refId ? 'affiliateScrapeAndClaim' : 'scrapeAndClaim';
+    const params = `sessionId=${encodeURIComponent(txId)}${refId ? '&affiliateId=' + encodeURIComponent(refId) : ''}`;
+    const resp   = await fetch(`${GAS_URL}?action=${action}&${params}`);
     if (!resp.ok) {
       let e = ''; try { const j = await resp.json(); e = j.detail || j.message || ''; } catch {}
       showResult('error', '🌐', 'Server Error', `Server error (HTTP ${resp.status}). ${e} Please try again.`);
@@ -501,7 +528,7 @@ function handleResponse(data, txId) {
 
   if (data.eligible === false) {
     if (data.sender || data.amount) showPayerStrip(data.sender, data.amount, false);
-    showResult('warning', '⚠️', 'Insufficient Payment', 'This payment is below the required <strong>₦2,000</strong>. No activation key will be issued.');
+    showResult('warning', '⚠️', 'Insufficient Payment', 'This payment is below the required <strong>₦4,000</strong>. No activation key will be issued.');
     return;
   }
 
@@ -550,6 +577,8 @@ function goToKeyPage(keys, sender, amount) {
 
 function goRetrieve() {
   document.getElementById('txInput').value = '';
+  const ref = document.getElementById('refInput');
+  if (!ref.readOnly) ref.value = '';
   hideResult();
   showPage(3);
 }
@@ -583,6 +612,7 @@ function setLoading(on) {
   document.getElementById('spinner').style.display = on ? 'block' : 'none';
   document.getElementById('btnLabel').textContent  = on ? 'Checking…' : 'Get Activation Key';
   document.getElementById('txInput').disabled      = on;
+  document.getElementById('refInput').disabled     = on;
 }
 
 function buildWaUrl(key) {
