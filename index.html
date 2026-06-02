@@ -260,7 +260,7 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;height:3px;backgroun
       </div>
     </div>
 
-    <button class="primary-btn" style="margin-top:6px;" onclick="startCountdown()">
+    <button class="primary-btn" style="margin-top:6px;" onclick="showPage(3);document.getElementById('txInput').focus();">
       ✅ I've Paid — Verify Payment
     </button>
     <div class="footer">© 2026 Maxh Technologies · ExamDriller</div>
@@ -451,23 +451,6 @@ document.getElementById('acctCopyBtn').addEventListener('click', function () {
 });
 
 /* ── Countdown ── */
-function startCountdown() {
-  showPage(2);
-  let secs = 10;
-  const numEl  = document.getElementById('countdownNum');
-  const ring   = document.getElementById('countdownRing');
-  const total  = 327; // 2π×52
-
-  const tick = () => {
-    numEl.textContent = secs;
-    ring.style.strokeDashoffset = total - (total * secs / 10);
-    if (secs <= 0) { showPage(3); document.getElementById('txInput').focus(); return; }
-    secs--;
-    setTimeout(tick, 1000);
-  };
-  tick();
-}
-
 /* ── Verify ── */
 document.getElementById('txInput').addEventListener('keydown', e => { if (e.key === 'Enter') getKey(); });
 document.getElementById('refInput').addEventListener('keydown', e => { if (e.key === 'Enter') getKey(); });
@@ -476,12 +459,7 @@ document.getElementById('refInput').addEventListener('keydown', e => { if (e.key
 (function() {
   const ref = new URLSearchParams(window.location.search).get('ref');
   if (ref) {
-    const el = document.getElementById('refInput');
-    el.value = ref.toUpperCase().substring(0, 5);
-    el.readOnly = true;
-    el.style.background = '#f0fdf8';
-    el.style.borderColor = 'var(--green-border)';
-    el.style.color = 'var(--green)';
+    document.getElementById('refInput').value = ref.toUpperCase().substring(0, 5);
   }
 })();
 document.getElementById('mainBtn').addEventListener('click', getKey);
